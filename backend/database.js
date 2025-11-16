@@ -32,12 +32,18 @@ async function testConnection() {
 
 // Execute query with error handling
 async function executeQuery(query, params = []) {
+    const startTime = Date.now();
     try {
         // Ensure no bound parameter is undefined – map to SQL NULL
         const safeParams = Array.isArray(params)
             ? params.map((p) => (p === undefined ? null : p))
             : params;
         const [results] = await pool.execute(query, safeParams);
+        
+        const queryTime = Date.now() - startTime;
+        if (queryTime > 5000) {
+            console.warn(`⚠️  Slow query (${queryTime}ms): ${query.substring(0, 100)}...`);
+        }
         
         // For INSERT/UPDATE/DELETE, results is an OkPacket with insertId, affectedRows, etc.
         // For SELECT, results is an array of rows
@@ -49,7 +55,13 @@ async function executeQuery(query, params = []) {
             affectedRows: results.affectedRows || null
         };
     } catch (error) {
-        console.error('Database query error:', error);
+        const queryTime = Date.now() - startTime;
+        console.error(`Database query error (${queryTime}ms):`, error.message);
+        if (query && query.length < 200) {
+            console.error('Query:', query);
+        } else {
+            console.error('Query:', query.substring(0, 200) + '...');
+        }
         return { success: false, error: error.message };
     }
 }
@@ -70,11 +82,43 @@ async function getViewsData() {
     ];
 
     const results = {};
+    const errors = [];
     
     for (const view of views) {
-        const result = await executeQuery(`SELECT * FROM ${view} LIMIT 100`);
-        // Return just the data array, not the wrapped result object
-        results[view] = result.success ? result.data : [];
+        try {
+            // Use limit for initial load - can be adjusted based on performance needs
+            const result = await executeQuery(`SELECT * FROM ${view} LIMIT 100`);
+            
+            if (result.success) {
+                // Return just the data array, not the wrapped result object
+                results[view] = Array.isArray(result.data) ? result.data : [];
+                
+                // Log if view is empty but query succeeded
+                if (results[view].length === 0) {
+                    console.log(`⚠️  View ${view} exists but contains no data`);
+                } else {
+                    console.log(`✅ View ${view}: ${results[view].length} records`);
+                }
+            } else {
+                // Query failed - log error but continue
+                console.error(`❌ Query failed for view ${view}:`, result.error);
+                errors.push({ view, error: result.error });
+                results[view] = [];
+            }
+        } catch (error) {
+            // Unexpected error - log and continue
+            console.error(`❌ Unexpected error fetching view ${view}:`, error.message);
+            errors.push({ view, error: error.message });
+            results[view] = [];
+        }
+    }
+    
+    // Log summary
+    const viewsWithData = Object.values(results).filter(arr => arr.length > 0).length;
+    console.log(`📊 Views summary: ${viewsWithData}/${views.length} views have data`);
+    
+    if (errors.length > 0) {
+        console.warn(`⚠️  ${errors.length} views had errors:`, errors.map(e => e.view).join(', '));
     }
     
     return results;

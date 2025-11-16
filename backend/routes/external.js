@@ -249,6 +249,181 @@ router.get('/sentiment/:driver', async (req, res) => {
     }
 });
 
+// Get upcoming race with location
+router.get('/upcoming-race', async (req, res) => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Get the next upcoming race
+        const result = await executeQuery(
+            `SELECT r.raceId, r.name AS race_name, r.date, r.year,
+                    c.name AS circuit_name, c.location, c.country
+             FROM races r
+             JOIN circuits c ON r.circuitId = c.circuitId
+             WHERE r.date >= ?
+             ORDER BY r.date ASC
+             LIMIT 1`,
+            [today]
+        );
+        
+        if (result.success && result.data && result.data.length > 0) {
+            res.json({ success: true, data: result.data[0] });
+        } else {
+            res.json({ success: true, data: null, message: 'No upcoming races found' });
+        }
+    } catch (error) {
+        console.error('Upcoming race query error:', error.message);
+        res.status(500).json({ success: false, error: 'Failed to fetch upcoming race' });
+    }
+});
+
+// Get weather for upcoming race weekend
+router.get('/weather/upcoming-race', async (req, res) => {
+    try {
+        // First get the upcoming race
+        const today = new Date().toISOString().split('T')[0];
+        const raceResult = await executeQuery(
+            `SELECT r.raceId, r.name AS race_name, r.date, r.year,
+                    c.name AS circuit_name, c.location, c.country
+             FROM races r
+             JOIN circuits c ON r.circuitId = c.circuitId
+             WHERE r.date >= ?
+             ORDER BY r.date ASC
+             LIMIT 1`,
+            [today]
+        );
+        
+        if (!raceResult.success || !raceResult.data || raceResult.data.length === 0) {
+            return res.json({ 
+                success: true, 
+                data: null, 
+                message: 'No upcoming races found' 
+            });
+        }
+        
+        const race = raceResult.data[0];
+        const location = race.location || race.circuit_name || race.country;
+        
+        // Fetch weather for the race location
+        const weatherApiKey = process.env.WEATHER_API_KEY;
+        let weatherData;
+        
+        // Try OpenWeatherMap if API key is provided
+        if (weatherApiKey && weatherApiKey !== 'your_weather_api_key_here') {
+            try {
+                // Get forecast for the race weekend (3-day forecast)
+                const response = await axios.get(
+                    `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(location)}&appid=${weatherApiKey}&units=metric`,
+                    { timeout: 5000 }
+                );
+                
+                // Get forecast for race weekend (next 3 days)
+                const raceDate = new Date(race.date);
+                const forecasts = response.data.list.filter((item: any) => {
+                    const forecastDate = new Date(item.dt * 1000);
+                    return forecastDate >= new Date() && forecastDate <= new Date(raceDate.getTime() + 2 * 24 * 60 * 60 * 1000);
+                }).slice(0, 8); // Get up to 8 forecasts (every 3 hours)
+                
+                weatherData = {
+                    race: {
+                        name: race.race_name,
+                        date: race.date,
+                        location: race.location,
+                        circuit: race.circuit_name,
+                        country: race.country
+                    },
+                    location: location,
+                    forecasts: forecasts.map((item: any) => ({
+                        datetime: new Date(item.dt * 1000).toISOString(),
+                        temperature: item.main.temp,
+                        feels_like: item.main.feels_like,
+                        description: item.weather[0].description,
+                        humidity: item.main.humidity,
+                        wind_speed: item.wind.speed || 0,
+                        clouds: item.clouds.all || 0
+                    })),
+                    current: forecasts[0] ? {
+                        temperature: forecasts[0].main.temp,
+                        description: forecasts[0].weather[0].description,
+                        humidity: forecasts[0].main.humidity,
+                        wind_speed: forecasts[0].wind.speed || 0
+                    } : null,
+                    timestamp: new Date().toISOString()
+                };
+            } catch (apiError) {
+                console.error('OpenWeatherMap API error, falling back to wttr.in:', apiError.message);
+            }
+        }
+        
+        // Use wttr.in as fallback (free, no API key)
+        if (!weatherData) {
+            try {
+                // wttr.in provides 3-day forecast by default
+                const response = await axios.get(
+                    `https://wttr.in/${encodeURIComponent(location)}?format=j1`,
+                    { timeout: 5000 }
+                );
+                
+                const current = response.data.current_condition[0];
+                const forecast = response.data.weather.slice(0, 3); // Next 3 days
+                
+                weatherData = {
+                    race: {
+                        name: race.race_name,
+                        date: race.date,
+                        location: race.location,
+                        circuit: race.circuit_name,
+                        country: race.country
+                    },
+                    location: location,
+                    current: {
+                        temperature: parseFloat(current.temp_C),
+                        description: current.weatherDesc[0].value,
+                        humidity: parseInt(current.humidity),
+                        wind_speed: parseFloat(current.windspeedKmph) / 3.6
+                    },
+                    forecast: forecast.map((day: any) => ({
+                        date: day.date,
+                        maxtemp: parseFloat(day.maxtempC),
+                        mintemp: parseFloat(day.mintempC),
+                        description: day.hourly[0].weatherDesc[0].value,
+                        humidity: parseInt(day.hourly[0].humidity),
+                        wind_speed: parseFloat(day.hourly[0].windspeedKmph) / 3.6
+                    })),
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Store weather data in database
+                if (weatherData.current) {
+                    const insertResult = await executeQuery(
+                        'INSERT INTO weather_data (location, temperature, description, humidity, wind_speed, recorded_at) VALUES (?, ?, ?, ?, ?, ?)',
+                        [location, weatherData.current.temperature, weatherData.current.description, weatherData.current.humidity, weatherData.current.wind_speed, weatherData.timestamp]
+                    );
+                    
+                    if (!insertResult.success) {
+                        console.error('Failed to store weather data:', insertResult.error);
+                    }
+                }
+            } catch (wttrError) {
+                console.error('wttr.in API error:', wttrError.message);
+                return res.status(500).json({ 
+                    success: false, 
+                    error: 'Failed to fetch weather from external API' 
+                });
+            }
+        }
+        
+        res.json({ success: true, data: weatherData });
+        
+    } catch (error) {
+        console.error('Weather API error:', error.message);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message || 'Failed to fetch weather data from external API' 
+        });
+    }
+});
+
 // Query stored weather data (Query 1 for external API requirement)
 router.get('/weather/history/:location', async (req, res) => {
     try {
@@ -339,7 +514,9 @@ router.post('/export/:table', async (req, res) => {
         
         const validTables = [
             'drivers', 'constructors', 'races', 'results', 
-            'qualifying', 'circuit_statistics', 'top_constructors_by_points'
+            'qualifying', 'circuit_statistics', 'top_constructors_by_points',
+            'circuits', 'pit_stops', 'lap_times', 'status', 'seasons',
+            'constructor_results', 'constructor_standings', 'driver_standings', 'sprint_results'
         ];
         
         if (!validTables.includes(table)) {
@@ -365,16 +542,26 @@ router.post('/export/:table', async (req, res) => {
             }
             
             const headers = Object.keys(result.data[0]);
+            // Escape commas, quotes, and newlines in CSV
+            const escapeCSV = (value) => {
+                if (value === null || value === undefined) return '';
+                const str = String(value);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            };
+            
             const csvContent = [
                 headers.join(','),
                 ...result.data.map(row => 
-                    headers.map(header => `"${row[header] || ''}"`).join(',')
+                    headers.map(header => escapeCSV(row[header])).join(',')
                 )
             ].join('\n');
             
             res.json({ success: true, data: csvContent, format: 'csv' });
         } else {
-            // Return as JSON
+            // Return as JSON (will be stringified on frontend)
             res.json({ success: true, data: result.data, format: 'json' });
         }
         

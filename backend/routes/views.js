@@ -11,25 +11,55 @@ const { verifyToken } = require('../auth');
 // Returns all views data (flattened for frontend)
 // =========================================
 router.get('/all', async (req, res) => {
+    const startTime = Date.now();
     try {
+        console.log('📥 Fetching all views data...');
         const viewsData = await getViewsData();
+        const fetchTime = Date.now() - startTime;
+        console.log(`⏱️  Total fetch time: ${fetchTime}ms`);
 
         // Normalize shape for frontend: ensure each entry is an array
         const normalized = {};
+        let totalRecords = 0;
+        
         for (const [viewName, value] of Object.entries(viewsData)) {
             if (Array.isArray(value)) {
                 normalized[viewName] = value;
+                totalRecords += value.length;
             } else if (value && Array.isArray(value.data)) {
                 normalized[viewName] = value.data;
+                totalRecords += value.data.length;
             } else {
                 normalized[viewName] = [];
             }
         }
 
-        res.json({ success: true, data: normalized });
+        // Check if any views have data
+        const viewsWithData = Object.entries(normalized).filter(([_, arr]) => Array.isArray(arr) && arr.length > 0);
+        const hasData = viewsWithData.length > 0;
+        
+        if (!hasData) {
+            console.warn('⚠️  Warning: All views are empty. Views may exist but contain no data.');
+        } else {
+            console.log(`✅ Successfully fetched data from ${viewsWithData.length} views (${totalRecords} total records)`);
+        }
+
+        res.json({ 
+            success: true, 
+            data: normalized,
+            summary: {
+                totalViews: Object.keys(normalized).length,
+                viewsWithData: viewsWithData.length,
+                totalRecords: totalRecords
+            }
+        });
     } catch (error) {
-        console.error('Error fetching all views:', error);
-        res.status(500).json({ success: false, error: error.message });
+        console.error('❌ Error fetching all views:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message,
+            hint: 'Check server logs for detailed error information. Ensure views exist and database connection is working.'
+        });
     }
 });
 

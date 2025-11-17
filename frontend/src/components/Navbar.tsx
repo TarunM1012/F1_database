@@ -59,6 +59,12 @@ const Navbar: React.FC = () => {
           >
             Data Export
           </Link>
+          <Link
+            to="/external-apis"
+            className={`nav-link ${isActive('/external-apis') ? 'active' : ''}`}
+          >
+            External APIs
+          </Link>
         </div>
       </div>
 

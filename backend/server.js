@@ -13,6 +13,8 @@ const authRoutes = require('./routes/auth');
 const viewsRoutes = require('./routes/views');
 const crudRoutes = require('./routes/crud');
 const externalRoutes = require('./routes/external');
+const openmeteoRoutes = require('./routes/openmeteo');
+const newsdataRoutes = require('./routes/newsdata');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -86,6 +88,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/views', viewsRoutes);
 app.use('/api/crud', crudRoutes);
 app.use('/api/external', externalRoutes);
+app.use('/api/openmeteo', openmeteoRoutes);
+app.use('/api/newsdata', newsdataRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

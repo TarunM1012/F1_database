@@ -9,6 +9,7 @@ import Views from './components/Views';
 import CRUD from './components/CRUD';
 import Analytics from './components/Analytics';
 import DataExport from './components/DataExport';
+import ExternalAPIs from './components/ExternalAPIs';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
@@ -59,6 +60,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <DataExport />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/external-apis" 
+                  element={
+                    <ProtectedRoute>
+                      <ExternalAPIs />
                     </ProtectedRoute>
                   } 
                 />

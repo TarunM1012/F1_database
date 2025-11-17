@@ -319,7 +319,7 @@ router.get('/weather/upcoming-race', async (req, res) => {
                 
                 // Get forecast for race weekend (next 3 days)
                 const raceDate = new Date(race.date);
-                const forecasts = response.data.list.filter((item: any) => {
+                const forecasts = response.data.list.filter((item) => {
                     const forecastDate = new Date(item.dt * 1000);
                     return forecastDate >= new Date() && forecastDate <= new Date(raceDate.getTime() + 2 * 24 * 60 * 60 * 1000);
                 }).slice(0, 8); // Get up to 8 forecasts (every 3 hours)
@@ -333,7 +333,7 @@ router.get('/weather/upcoming-race', async (req, res) => {
                         country: race.country
                     },
                     location: location,
-                    forecasts: forecasts.map((item: any) => ({
+                    forecasts: forecasts.map((item) => ({
                         datetime: new Date(item.dt * 1000).toISOString(),
                         temperature: item.main.temp,
                         feels_like: item.main.feels_like,
@@ -382,7 +382,7 @@ router.get('/weather/upcoming-race', async (req, res) => {
                         humidity: parseInt(current.humidity),
                         wind_speed: parseFloat(current.windspeedKmph) / 3.6
                     },
-                    forecast: forecast.map((day: any) => ({
+                    forecast: forecast.map((day) => ({
                         date: day.date,
                         maxtemp: parseFloat(day.maxtempC),
                         mintemp: parseFloat(day.mintempC),

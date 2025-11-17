@@ -14,8 +14,6 @@ const Dashboard: React.FC = () => {
     circuits: 0,
     races: 0
   });
-  const [summaryLoading, setSummaryLoading] = useState(false);
-
   useEffect(() => {
     fetchViewsData();
   }, [fetchViewsData]);
@@ -24,7 +22,6 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const loadSummary = async () => {
       try {
-        setSummaryLoading(true);
         const res = await api.get('/views/summary');
         if (res.data?.success) {
           setStats((prev) => ({
@@ -35,9 +32,6 @@ const Dashboard: React.FC = () => {
           }));
         }
       } catch {}
-      finally {
-        setSummaryLoading(false);
-      }
     };
     loadSummary();
   }, []);
@@ -122,7 +116,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Database Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 gap-6 mb-8">
           <div className="card">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">System Overview</h2>
             <div className="space-y-3">
@@ -138,16 +132,6 @@ const Dashboard: React.FC = () => {
                 <span className="text-gray-600">User Role</span>
                 <span className="font-semibold capitalize">{user?.role}</span>
               </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <button className="btn-primary text-sm">View Race Results</button>
-              <button className="btn-secondary text-sm">Driver Standings</button>
-              <button className="btn-secondary text-sm">Constructor Performance</button>
-              <button className="btn-secondary text-sm">Data Visualization</button>
             </div>
           </div>
         </div>

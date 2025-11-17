@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const { verifyToken } = require('../auth');
-const { getNextRaces } = require('../utils/calendarParser');
+const { getNextRaces, getAllRaces } = require('../utils/calendarParser');
 
 // Apply authentication middleware
 router.use(verifyToken);
@@ -243,19 +243,25 @@ router.get('/weather/next-races', async (req, res) => {
 });
 
 /**
- * Get weather for a specific race by index
+ * Get weather for a specific race by index (supports all races, past and future)
  */
 router.get('/weather/race/:index', async (req, res) => {
     try {
         const index = parseInt(req.params.index) || 0;
-        console.log(`🌤️  Fetching weather for race index: ${index}`);
+        const includePast = req.query.include_past === 'true' || req.query.include_past === '1';
+        console.log(`🌤️  Fetching weather for race index: ${index} (includePast: ${includePast})`);
         
         let races;
         try {
-            races = getNextRaces(); // Get all upcoming races
-            console.log(`📅 getNextRaces() returned ${races ? races.length : 0} races`);
+            if (includePast) {
+                races = getAllRaces(); // Get all races (past and future)
+                console.log(`📅 getAllRaces() returned ${races ? races.length : 0} races`);
+            } else {
+                races = getNextRaces(); // Get only upcoming races
+                console.log(`📅 getNextRaces() returned ${races ? races.length : 0} races`);
+            }
         } catch (parseError) {
-            console.error('❌ Error calling getNextRaces():', parseError.message);
+            console.error('❌ Error calling race parser:', parseError.message);
             return res.status(500).json({
                 success: false,
                 error: `Failed to parse calendar: ${parseError.message}`,
@@ -268,7 +274,7 @@ router.get('/weather/race/:index', async (req, res) => {
             console.log('⚠️  No races found, returning 404');
             return res.status(404).json({
                 success: false,
-                error: 'No upcoming races found in calendar',
+                error: 'No races found in calendar',
                 total_races: 0,
                 current_index: index
             });
@@ -297,6 +303,10 @@ router.get('/weather/race/:index', async (req, res) => {
         
         // Calculate date range
         const raceDate = new Date(race.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const isPastRace = raceDate < today;
+        
         const startDate = new Date(raceDate);
         startDate.setDate(startDate.getDate() - 2);
         const endDate = new Date(raceDate);
@@ -305,13 +315,46 @@ router.get('/weather/race/:index', async (req, res) => {
         const startDateStr = startDate.toISOString().split('T')[0];
         const endDateStr = endDate.toISOString().split('T')[0];
         
-        // Get weather forecast
-        const forecast = await getWeatherForecast(
-            locationData.latitude,
-            locationData.longitude,
-            startDateStr,
-            endDateStr
-        );
+        let forecast;
+        // For past races, use historical API; for future races, use forecast API
+        if (isPastRace) {
+            try {
+                // Use historical weather API for past dates
+                const historicalResponse = await axios.get(
+                    'https://archive-api.open-meteo.com/v1/archive',
+                    {
+                        params: {
+                            latitude: locationData.latitude,
+                            longitude: locationData.longitude,
+                            start_date: startDateStr,
+                            end_date: endDateStr,
+                            hourly: 'temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,precipitation_probability',
+                            daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max',
+                            timezone: 'auto'
+                        },
+                        timeout: 10000
+                    }
+                );
+                forecast = historicalResponse.data;
+            } catch (historicalError) {
+                console.error('Historical weather API error:', historicalError.message);
+                // Fall back to forecast API (might not work for very old dates)
+                forecast = await getWeatherForecast(
+                    locationData.latitude,
+                    locationData.longitude,
+                    startDateStr,
+                    endDateStr
+                );
+            }
+        } else {
+            // Get weather forecast for future races
+            forecast = await getWeatherForecast(
+                locationData.latitude,
+                locationData.longitude,
+                startDateStr,
+                endDateStr
+            );
+        }
         
         // Process daily forecast
         const dailyForecast = [];

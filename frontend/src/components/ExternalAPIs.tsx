@@ -61,13 +61,14 @@ const ExternalAPIs: React.FC = () => {
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsError, setNewsError] = useState<string | null>(null);
   const [totalRaces, setTotalRaces] = useState(0);
+  const [includePastRaces, setIncludePastRaces] = useState(false);
 
   // Fetch weather data for next races
   useEffect(() => {
     if (activeTab === 'weather') {
       fetchWeatherData();
     }
-  }, [activeTab]);
+  }, [activeTab, includePastRaces]);
 
   // Fetch news data
   useEffect(() => {
@@ -81,20 +82,8 @@ const ExternalAPIs: React.FC = () => {
       setWeatherLoading(true);
       setWeatherError(null);
       
-      // First, get the total number of available races
-      const raceResponse = await api.get(`/openmeteo/weather/race/0`);
-      if (raceResponse.data.success) {
-        setTotalRaces(raceResponse.data.total_races || 0);
-      }
-      
-      // Fetch weather for next 2-3 races
-      const response = await api.get('/openmeteo/weather/next-races?count=3');
-      if (response.data.success) {
-        setWeatherData(response.data.data || []);
-        setCurrentRaceIndex(0);
-      } else {
-        setWeatherError('Failed to fetch weather data');
-      }
+      // Fetch weather for the first race (index 0)
+      await fetchWeatherForRace(0);
     } catch (error: any) {
       console.error('Error fetching weather:', error);
       setWeatherError(error.response?.data?.error || 'Failed to fetch weather data');
@@ -107,14 +96,11 @@ const ExternalAPIs: React.FC = () => {
     try {
       setWeatherLoading(true);
       setWeatherError(null);
-      const response = await api.get(`/openmeteo/weather/race/${index}`);
+      const includePastParam = includePastRaces ? '?include_past=true' : '';
+      const response = await api.get(`/openmeteo/weather/race/${index}${includePastParam}`);
       if (response.data.success) {
-        // Update the weather data array
-        setWeatherData(prev => {
-          const newData = [...prev];
-          newData[currentRaceIndex] = response.data.data;
-          return newData;
-        });
+        // Replace the weather data with the fetched race
+        setWeatherData([response.data.data]);
         setCurrentRaceIndex(index);
         setTotalRaces(response.data.total_races || 0);
       }
@@ -148,19 +134,20 @@ const ExternalAPIs: React.FC = () => {
   const nextRace = () => {
     if (currentRaceIndex < totalRaces - 1) {
       const nextIndex = currentRaceIndex + 1;
-      // Check if we already have data for this race
-      if (weatherData[nextIndex] && !weatherData[nextIndex].error) {
-        setCurrentRaceIndex(nextIndex);
-      } else {
-        fetchWeatherForRace(nextIndex);
-      }
+      fetchWeatherForRace(nextIndex);
     }
   };
 
   const prevRace = () => {
     if (currentRaceIndex > 0) {
-      setCurrentRaceIndex(currentRaceIndex - 1);
+      const prevIndex = currentRaceIndex - 1;
+      fetchWeatherForRace(prevIndex);
     }
+  };
+
+  const togglePastRaces = () => {
+    setIncludePastRaces(!includePastRaces);
+    setCurrentRaceIndex(0); // Reset to first race when toggling
   };
 
   const nextNews = () => {
@@ -212,31 +199,45 @@ const ExternalAPIs: React.FC = () => {
           <p className="text-gray-600">Weather forecasts and trending F1 news from external sources</p>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-6 border-b border-gray-200">
-          <nav className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('weather')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'weather'
-                  ? 'border-red-600 text-red-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Race Weather
-            </button>
-            <button
-              onClick={() => setActiveTab('news')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'news'
-                  ? 'border-red-600 text-red-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Trending News
-            </button>
-          </nav>
-        </div>
+          {/* Tabs */}
+          <div className="mb-6 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <nav className="flex space-x-8">
+                <button
+                  onClick={() => setActiveTab('weather')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'weather'
+                      ? 'border-red-600 text-red-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Race Weather
+                </button>
+                <button
+                  onClick={() => setActiveTab('news')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'news'
+                      ? 'border-red-600 text-red-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Trending News
+                </button>
+              </nav>
+              {activeTab === 'weather' && (
+                <button
+                  onClick={togglePastRaces}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                    includePastRaces
+                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {includePastRaces ? '📅 Show Upcoming Only' : '📅 Include Past Races'}
+                </button>
+              )}
+            </div>
+          </div>
 
         {/* Weather Tab */}
         {activeTab === 'weather' && (
@@ -261,22 +262,22 @@ const ExternalAPIs: React.FC = () => {
               </div>
             ) : (
               <div>
-                {weatherData[currentRaceIndex] && (
+                {weatherData[0] && (
                   <div className="card mb-6">
                     <div className="flex justify-between items-start mb-6">
                       <div>
                         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                          {weatherData[currentRaceIndex].race.name}
+                          {weatherData[0].race.name}
                         </h2>
                         <p className="text-gray-600">
-                          {formatDate(weatherData[currentRaceIndex].race.date)}
+                          {formatDate(weatherData[0].race.date)}
                         </p>
                         <p className="text-gray-600">
-                          {weatherData[currentRaceIndex].race.location}, {weatherData[currentRaceIndex].race.country}
+                          {weatherData[0].race.location}, {weatherData[0].race.country}
                         </p>
-                        {weatherData[currentRaceIndex].race.geocoded_location && (
+                        {weatherData[0].race.geocoded_location && (
                           <p className="text-sm text-gray-500 mt-1">
-                            📍 {weatherData[currentRaceIndex].race.geocoded_location}
+                            📍 {weatherData[0].race.geocoded_location}
                           </p>
                         )}
                       </div>
@@ -284,7 +285,7 @@ const ExternalAPIs: React.FC = () => {
                         <button
                           onClick={prevRace}
                           disabled={currentRaceIndex === 0}
-                          className="bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 min-w-[130px] flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:shadow-none"
+                          className={`${currentRaceIndex === 0 ? 'bg-red-600 opacity-50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 cursor-pointer'} text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 min-w-[130px] flex items-center justify-center gap-2 ${currentRaceIndex === 0 ? '' : 'shadow-md hover:shadow-lg'}`}
                         >
                           <span>←</span>
                           <span>Previous</span>
@@ -292,7 +293,7 @@ const ExternalAPIs: React.FC = () => {
                         <button
                           onClick={nextRace}
                           disabled={currentRaceIndex >= totalRaces - 1}
-                          className="bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 min-w-[130px] flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:shadow-none"
+                          className={`${currentRaceIndex >= totalRaces - 1 ? 'bg-red-600 opacity-50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 cursor-pointer'} text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 min-w-[130px] flex items-center justify-center gap-2 ${currentRaceIndex >= totalRaces - 1 ? '' : 'shadow-md hover:shadow-lg'}`}
                         >
                           <span>Next</span>
                           <span>→</span>
@@ -486,7 +487,7 @@ const ExternalAPIs: React.FC = () => {
                           <button
                             onClick={prevNews}
                             disabled={currentNewsIndex === 0}
-                            className="bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 min-w-[130px] flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:shadow-none"
+                            className={`${currentNewsIndex === 0 ? 'bg-red-600 opacity-50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 cursor-pointer'} text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 min-w-[130px] flex items-center justify-center gap-2 ${currentNewsIndex === 0 ? '' : 'shadow-md hover:shadow-lg'}`}
                           >
                             <span>←</span>
                             <span>Previous</span>
@@ -494,7 +495,7 @@ const ExternalAPIs: React.FC = () => {
                           <button
                             onClick={nextNews}
                             disabled={currentNewsIndex >= newsArticles.length - 1}
-                            className="bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 min-w-[130px] flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:shadow-none"
+                            className={`${currentNewsIndex >= newsArticles.length - 1 ? 'bg-red-600 opacity-50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 cursor-pointer'} text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 min-w-[130px] flex items-center justify-center gap-2 ${currentNewsIndex >= newsArticles.length - 1 ? '' : 'shadow-md hover:shadow-lg'}`}
                           >
                             <span>Next</span>
                             <span>→</span>

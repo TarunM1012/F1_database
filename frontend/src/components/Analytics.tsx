@@ -37,14 +37,11 @@ const Analytics: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [externalData, setExternalData] = useState<any>(null);
   const [externalDataType, setExternalDataType] = useState<string>('');
-  const [upcomingRaceWeather, setUpcomingRaceWeather] = useState<any>(null);
-  const [loadingRaceWeather, setLoadingRaceWeather] = useState(false);
   const chartRef = useRef<any>(null);
 
   useEffect(() => {
     // Only fetch once on mount
     fetchViewsData();
-    fetchUpcomingRaceWeather();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -444,24 +441,6 @@ const Analytics: React.FC = () => {
     }
   };
 
-  const fetchUpcomingRaceWeather = async () => {
-    try {
-      setLoadingRaceWeather(true);
-      const response = await api.get('/external/weather/upcoming-race');
-      if (response.data.success) {
-        setUpcomingRaceWeather(response.data.data);
-        console.log('Upcoming race weather:', response.data.data);
-      } else {
-        setUpcomingRaceWeather(null);
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch upcoming race weather:', error);
-      setUpcomingRaceWeather(null);
-    } finally {
-      setLoadingRaceWeather(false);
-    }
-  };
-
   const getStoredData = async (type: string, param?: string) => {
     try {
       setLoading(true);
@@ -599,167 +578,6 @@ const Analytics: React.FC = () => {
           )}
         </div>
       </div>
-
-      {/* Upcoming Race Weather */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Upcoming Race Weekend Weather</h2>
-            <button
-              onClick={fetchUpcomingRaceWeather}
-              disabled={loadingRaceWeather}
-              className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              {loadingRaceWeather ? 'Loading...' : 'Refresh'}
-            </button>
-        </div>
-        
-        {loadingRaceWeather ? (
-          <div className="text-center py-8">
-            <div className="loading mx-auto mb-2"></div>
-            <p className="text-gray-600">Loading weather data...</p>
-          </div>
-        ) : upcomingRaceWeather && upcomingRaceWeather.race ? (
-            <div className="space-y-4">
-              {/* Race Information */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">{upcomingRaceWeather.race.name}</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">Circuit:</span>
-                    <p className="font-medium text-gray-900">{upcomingRaceWeather.race.circuit}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Location:</span>
-                    <p className="font-medium text-gray-900">{upcomingRaceWeather.race.location || upcomingRaceWeather.race.country}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Country:</span>
-                    <p className="font-medium text-gray-900">{upcomingRaceWeather.race.country}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Race Date:</span>
-                    <p className="font-medium text-gray-900">
-                      {new Date(upcomingRaceWeather.race.date).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Current Weather */}
-              {upcomingRaceWeather.current && (
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
-                  <h4 className="text-lg font-semibold mb-4">Current Weather Conditions</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <span className="text-blue-100 text-sm">Temperature</span>
-                      <p className="text-2xl font-bold">{upcomingRaceWeather.current.temperature?.toFixed(1)}°C</p>
-                    </div>
-                    <div>
-                      <span className="text-blue-100 text-sm">Condition</span>
-                      <p className="text-lg font-medium capitalize">{upcomingRaceWeather.current.description}</p>
-                    </div>
-                    <div>
-                      <span className="text-blue-100 text-sm">Humidity</span>
-                      <p className="text-lg font-medium">{upcomingRaceWeather.current.humidity}%</p>
-                    </div>
-                    <div>
-                      <span className="text-blue-100 text-sm">Wind Speed</span>
-                      <p className="text-lg font-medium">{(upcomingRaceWeather.current.wind_speed * 3.6).toFixed(1)} km/h</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Weekend Forecast */}
-              {upcomingRaceWeather.forecast && upcomingRaceWeather.forecast.length > 0 && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Weekend Forecast</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {upcomingRaceWeather.forecast.map((day: any, index: number) => (
-                      <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <h5 className="font-semibold text-gray-900 mb-2">
-                          {new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                        </h5>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">High:</span>
-                            <span className="font-medium text-gray-900">{day.maxtemp}°C</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Low:</span>
-                            <span className="font-medium text-gray-900">{day.mintemp}°C</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Condition:</span>
-                            <span className="font-medium text-gray-900 capitalize">{day.description}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Humidity:</span>
-                            <span className="font-medium text-gray-900">{day.humidity}%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Wind:</span>
-                            <span className="font-medium text-gray-900">{(day.wind_speed * 3.6).toFixed(1)} km/h</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Hourly Forecast (if available) */}
-              {upcomingRaceWeather.forecasts && upcomingRaceWeather.forecasts.length > 0 && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Detailed Forecast</h4>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border border-gray-200 rounded-lg">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Time</th>
-                          <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Temp</th>
-                          <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Condition</th>
-                          <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Humidity</th>
-                          <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Wind</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {upcomingRaceWeather.forecasts.map((forecast: any, index: number) => (
-                          <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                            <td className="px-4 py-2 text-sm text-gray-900">
-                              {new Date(forecast.datetime).toLocaleString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric', 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </td>
-                            <td className="px-4 py-2 text-sm font-medium text-gray-900">{forecast.temperature?.toFixed(1)}°C</td>
-                            <td className="px-4 py-2 text-sm text-gray-700 capitalize">{forecast.description}</td>
-                            <td className="px-4 py-2 text-sm text-gray-700">{forecast.humidity}%</td>
-                            <td className="px-4 py-2 text-sm text-gray-700">{(forecast.wind_speed * 3.6).toFixed(1)} km/h</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-600">
-              <p>No upcoming races found or weather data unavailable.</p>
-              <p className="text-sm mt-2">Make sure you have races with future dates in your database.</p>
-            </div>
-          )}
-      </div>
-
-
     </div>
   );
 };

@@ -99,138 +99,114 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="container">
-        <div className="max-w-md mx-auto">
-          <div className="card">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Formula 1 Data Management System
-              </h1>
-              <p className="text-gray-600">
-                Monitor race results, driver points, and constructor performance
-              </p>
-            </div>
+    <div className="login-page">
+      <div className="login-container">
+        <div className="login-card">
+          <div className="login-header">
+            <h1 className="login-title">
+              Formula 1 Data Management System
+            </h1>
+            <p className="login-subtitle">
+              Monitor race results, driver points, and constructor performance
+            </p>
+          </div>
 
-            {/* Toggle between Login and Register */}
-            <div className="mb-6 flex border-b border-gray-200">
-              <button
-                type="button"
-                onClick={() => isRegister && switchMode()}
-                className={`flex-1 py-2 px-4 text-center font-medium transition-colors ${
-                  !isRegister
-                    ? 'text-red-600 border-b-2 border-red-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => !isRegister && switchMode()}
-                className={`flex-1 py-2 px-4 text-center font-medium transition-colors ${
-                  isRegister
-                    ? 'text-red-600 border-b-2 border-red-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Register
-              </button>
-            </div>
-            
-            <form onSubmit={isRegister ? handleRegister : handleLogin}>
-              {error && (
-                <div className="alert alert-error">
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="alert alert-success">
-                  {success}
-                </div>
-              )}
-              
-              <div className="mb-4">
-                <input
-                  type="text"
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
-              </div>
-
-              {isRegister && (
-                <div className="mb-4">
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-              )}
-              
-              <div className="mb-4">
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-
-              {isRegister && (
-                <div className="mb-6">
-                  <input
-                    type="password"
-                    placeholder="Confirm Password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              )}
-
-              {!isRegister && (
-                <div className="mb-6"></div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary w-full"
-              >
-                {loading 
-                  ? (isRegister ? 'Registering...' : 'Signing in...') 
-                  : (isRegister ? 'Register' : 'Sign In')
-                }
-              </button>
-            </form>
-
-            {!isRegister && (
-              <div className="mt-6 text-center text-sm text-gray-500">
-                <p><strong>Demo Credentials:</strong> admin / admin123</p>
+          {/* Toggle between Login and Register */}
+          <div className="login-tabs">
+            <button
+              type="button"
+              onClick={() => isRegister && switchMode()}
+              className={`login-tab ${!isRegister ? 'active' : ''}`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => !isRegister && switchMode()}
+              className={`login-tab ${isRegister ? 'active' : ''}`}
+            >
+              Register
+            </button>
+          </div>
+          
+          <form onSubmit={isRegister ? handleRegister : handleLogin} className="login-form">
+            {error && (
+              <div className="login-alert login-alert-error">
+                {error}
               </div>
             )}
+
+            {success && (
+              <div className="login-alert login-alert-success">
+                {success}
+              </div>
+            )}
+            
+            <div className="login-input-group">
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="login-input"
+              />
+            </div>
 
             {isRegister && (
-              <div className="mt-6 text-center text-sm text-gray-500">
-                <p>Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={switchMode}
-                    className="text-red-600 hover:text-red-700 font-medium"
-                  >
-                    Sign In
-                  </button>
-                </p>
+              <div className="login-input-group">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="login-input"
+                />
               </div>
             )}
-          </div>
+            
+            <div className="login-input-group">
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="login-input"
+              />
+            </div>
+
+            {isRegister && (
+              <div className="login-input-group">
+                <input
+                  type="password"
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="login-input"
+                />
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="login-button"
+            >
+              {loading 
+                ? (isRegister ? 'Registering...' : 'Signing in...') 
+                : (isRegister ? 'Register' : 'Sign In')
+              }
+            </button>
+          </form>
+
+          {!isRegister && (
+            <div className="login-demo-info">
+              <p><strong>Demo Credentials:</strong> admin / admin123</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

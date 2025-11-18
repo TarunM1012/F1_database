@@ -24,7 +24,7 @@ const Navbar: React.FC = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/dashboard" className="navbar-brand">
-          <span className="navbar-logo-text">F1</span>
+          <img src="/favicon.png" alt="F1 Logo" className="navbar-logo" />
           <span className="navbar-title">F1 Data Management System</span>
         </Link>
 

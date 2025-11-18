@@ -31,6 +31,7 @@ const CRUD: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(50);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   // Form states
   const [showForm, setShowForm] = useState(false);
@@ -162,59 +163,81 @@ const CRUD: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">CRUD Operations</h1>
-        <p className="text-gray-600">
-          Create, Read, Update, and Delete Formula 1 data
-          {!isAdmin && <span className="text-red-600 ml-2">(Read-only for non-admin users)</span>}
-        </p>
+    <div className="views-layout" style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+      {/* Sidebar */}
+      <div className={`views-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-header">
+          <h2 className="sidebar-title">Data Management</h2>
+          <button 
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="sidebar-toggle"
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? '⟩' : '⟨'}
+          </button>
+        </div>
+
+        {!sidebarCollapsed && (
+          <>
+            <p className="sidebar-subtitle">
+              Manage Formula 1 Data {!isAdmin && '(Read-only)'}
+            </p>
+
+            <div className="sidebar-views">
+              <button
+                onClick={() => setActiveTab('drivers')}
+                className={`view-item ${activeTab === 'drivers' ? 'active' : ''}`}
+              >
+                <div>
+                  <div className="view-item-name">Drivers</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('constructors')}
+                className={`view-item ${activeTab === 'constructors' ? 'active' : ''}`}
+              >
+                <div>
+                  <div className="view-item-name">Constructors</div>
+                </div>
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
-      {error && (
-        <div className="alert-error">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="alert-success">
-          {success}
-        </div>
-      )}
-
-      <div className="bg-white rounded-lg shadow">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 px-6">
-            <button
-              onClick={() => setActiveTab('drivers')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'drivers'
-                  ? 'border-red-500 text-red-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Drivers
-            </button>
-            <button
-              onClick={() => setActiveTab('constructors')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'constructors'
-                  ? 'border-red-500 text-red-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Constructors
-            </button>
-          </nav>
+      {/* Main Content */}
+      <div className="views-content">
+        <div className="content-header">
+          <div>
+            <h1 className="content-title">
+              {activeTab === 'drivers' ? 'Drivers' : 'Constructors'}
+            </h1>
+            <p className="content-subtitle">
+              {activeTab === 'drivers' 
+                ? 'Create, Read, Update, and Delete driver records' 
+                : 'Create, Read, Update, and Delete constructor records'}
+              {!isAdmin && <span className="text-red-600 ml-2">(Read-only for non-admin users)</span>}
+            </p>
+          </div>
         </div>
 
+        <div className="content-body">
+          {error && (
+            <div className="alert-error mx-6 my-4">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="alert-success mx-6 my-4">
+              {success}
+            </div>
+          )}
+
+      <div className="bg-white rounded-lg shadow mx-6 my-4">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                {activeTab === 'drivers' ? 'Formula 1 Drivers' : 'Formula 1 Constructors'}
-              </h2>
               <p className="text-sm text-gray-600 mt-1">
                 Showing {((currentPage - 1) * limit) + 1}-{Math.min(currentPage * limit, totalCount)} of {totalCount} total
               </p>
@@ -451,9 +474,11 @@ const CRUD: React.FC = () => {
             </div>
           )}
         </div>
+        </div>
       </div>
 
       {/* form is inline above table now */}
+    </div>
     </div>
   );
 };

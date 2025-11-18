@@ -37,6 +37,7 @@ const Analytics: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [externalData, setExternalData] = useState<any>(null);
   const [externalDataType, setExternalDataType] = useState<string>('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const chartRef = useRef<any>(null);
 
   useEffect(() => {
@@ -469,37 +470,33 @@ const Analytics: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Analytics & Data Visualization</h1>
-        <p className="text-gray-600">
-          Explore Formula 1 data through charts, analytics, and external integrations
-        </p>
-      </div>
+    <div className="views-layout" style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+      {/* Sidebar */}
+      <div className={`views-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-header">
+          <h2 className="sidebar-title">Analytics</h2>
+          <button 
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="sidebar-toggle"
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? '⟩' : '⟨'}
+          </button>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Chart Selection */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Chart</h2>
-          {dataError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700">
-              <p className="font-medium">Error loading data:</p>
-              <p className="text-sm mb-3">{dataError}</p>
-              <button
-                onClick={fetchViewsData}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm font-medium"
-              >
-                Retry Loading Data
-              </button>
-            </div>
-          )}
-          {dataLoading ? (
-            <div className="text-center py-8">
-              <div className="loading mx-auto mb-2"></div>
-              <p className="text-gray-600">Loading data...</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
+        {!sidebarCollapsed && (
+          <>
+            <p className="sidebar-subtitle">
+              Select a chart to visualize
+            </p>
+
+            {dataError && (
+              <div className="alert-error mx-4 my-2">
+                {dataError}
+              </div>
+            )}
+
+            <div className="sidebar-views">
               {chartOptions.map((option) => {
                 const recordCount = viewsData[option.value]?.length || 0;
                 const hasData = recordCount > 0;
@@ -508,38 +505,39 @@ const Analytics: React.FC = () => {
                     key={option.value}
                     onClick={() => hasData && handleChartSelect(option.value)}
                     disabled={!hasData}
-                    className={`w-full p-4 text-left border rounded-lg transition-all ${
-                      selectedChart === option.value 
-                        ? 'border-red-500 bg-red-50 shadow-md' 
-                        : hasData
-                        ? 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-                        : 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed'
-                    }`}
+                    className={`view-item ${selectedChart === option.value ? 'active' : ''} ${!hasData ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{option.label}</h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {hasData ? `${recordCount} records available` : 'No data available'}
-                        </p>
+                    <div>
+                      <div className="view-item-name">{option.label}</div>
+                      <div className="view-item-description">{option.type.toUpperCase()} Chart</div>
+                      <div className="view-item-count">
+                        {hasData ? `${recordCount} records` : 'No data'}
                       </div>
-                      {hasData && (
-                        <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">
-                          {option.type.toUpperCase()}
-                        </span>
-                      )}
                     </div>
                   </button>
                 );
               })}
             </div>
-          )}
+          </>
+        )}
+      </div>
+
+      {/* Main Content */}
+      <div className="views-content">
+        <div className="content-header">
+          <div>
+            <h1 className="content-title">Analytics & Data Visualization</h1>
+            <p className="content-subtitle">
+              Explore Formula 1 data through interactive charts and visualizations
+            </p>
+          </div>
         </div>
 
-        {/* Chart Display */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="content-body">
+      <div className="bg-white rounded-lg shadow mx-6 my-4" style={{ height: 'calc(100vh - 180px)' }}>
+        <div className="p-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Visualization</h2>
+
             {chartData && (
               <span className="text-sm text-gray-500 font-medium">
                 {chartOptions.find(opt => opt.value === selectedChart)?.label}
@@ -547,14 +545,14 @@ const Analytics: React.FC = () => {
             )}
           </div>
           {dataLoading ? (
-            <div className="bg-gray-100 p-8 rounded-lg text-center" style={{ minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="bg-gray-100 rounded-lg text-center flex-1 flex items-center justify-center">
               <div>
                 <div className="loading mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading chart data...</p>
               </div>
             </div>
           ) : chartData ? (
-            <div className="chart-container" style={{ position: 'relative', height: '500px', width: '100%' }}>
+            <div className="chart-container flex-1" style={{ position: 'relative', width: '100%' }}>
               {chartData.type === 'bar' && (
                 <Bar ref={chartRef} data={chartData.data} options={chartData.options} onClick={handleChartClick} />
               )}
@@ -569,7 +567,7 @@ const Analytics: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="bg-gray-100 p-8 rounded-lg text-center" style={{ minHeight: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="bg-gray-100 rounded-lg text-center flex-1 flex items-center justify-center">
               <div>
                 <p className="text-gray-600 text-lg mb-2">Select a chart option to view data visualization</p>
                 <p className="text-sm text-gray-500">Choose from the available charts on the left to see interactive visualizations</p>
@@ -577,6 +575,8 @@ const Analytics: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
+      </div>
       </div>
     </div>
   );

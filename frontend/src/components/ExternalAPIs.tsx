@@ -192,45 +192,49 @@ const ExternalAPIs: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       <div className="container py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">External APIs</h1>
-          <p className="text-gray-600">Weather forecasts and trending F1 news from external sources</p>
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold mb-2" style={{ color: '#ffffff' }}>External APIs</h1>
+          <p style={{ color: '#ffffff' }}>Weather forecasts and trending F1 news from external sources</p>
         </div>
 
+        <div className="bg-white rounded-lg shadow-lg p-6">
           {/* Tabs */}
-          <div className="mb-6 border-b border-gray-200">
+          <div className="mb-8">
             <div className="flex justify-between items-center">
-              <nav className="flex space-x-8">
+              <nav className="flex gap-4">
                 <button
                   onClick={() => setActiveTab('weather')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  style={{ color: activeTab === 'weather' ? '#991b1b' : '#1f2937' }}
+                  className={`py-4 px-8 rounded-xl font-bold text-base transition-all duration-200 ${
                     activeTab === 'weather'
-                      ? 'border-red-600 text-red-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'bg-red-100 shadow-xl border-2 border-red-300 transform scale-105'
+                      : 'bg-white hover:bg-gray-50 shadow-lg border-2 border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  Race Weather
+                  🌤️ Race Weather
                 </button>
                 <button
                   onClick={() => setActiveTab('news')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  style={{ color: activeTab === 'news' ? '#991b1b' : '#1f2937' }}
+                  className={`py-4 px-8 rounded-xl font-bold text-base transition-all duration-200 ${
                     activeTab === 'news'
-                      ? 'border-red-600 text-red-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'bg-red-100 shadow-xl border-2 border-red-300 transform scale-105'
+                      : 'bg-white hover:bg-gray-50 shadow-lg border-2 border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  Trending News
+                  📰 Trending News
                 </button>
               </nav>
               {activeTab === 'weather' && (
                 <button
                   onClick={togglePastRaces}
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  style={{ color: includePastRaces ? '#991b1b' : '#1f2937' }}
+                  className={`px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 shadow-lg border-2 ${
                     includePastRaces
-                      ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? 'bg-red-100 border-red-300 hover:shadow-xl'
+                      : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
                   {includePastRaces ? '📅 Show Upcoming Only' : '📅 Include Past Races'}
@@ -245,7 +249,7 @@ const ExternalAPIs: React.FC = () => {
             {weatherLoading && weatherData.length === 0 ? (
               <div className="text-center py-12">
                 <div className="loading mx-auto mb-4"></div>
-                <p className="text-gray-500">Loading weather data...</p>
+                <p className="text-gray-700">Loading weather data...</p>
               </div>
             ) : weatherError ? (
               <div className="card">
@@ -258,13 +262,13 @@ const ExternalAPIs: React.FC = () => {
               </div>
             ) : weatherData.length === 0 ? (
               <div className="card">
-                <p className="text-gray-500">No weather data available</p>
+                <p className="text-gray-700">No weather data available</p>
               </div>
             ) : (
               <div>
                 {weatherData[0] && (
                   <div className="card mb-6">
-                    <div className="flex justify-between items-start mb-6">
+                    <div className="mb-6">
                       <div>
                         <h2 className="text-2xl font-bold text-gray-900 mb-2">
                           {weatherData[0].race.name}
@@ -280,24 +284,6 @@ const ExternalAPIs: React.FC = () => {
                             📍 {weatherData[0].race.geocoded_location}
                           </p>
                         )}
-                      </div>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={prevRace}
-                          disabled={currentRaceIndex === 0}
-                          className={`${currentRaceIndex === 0 ? 'bg-red-600 opacity-50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 cursor-pointer'} text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 min-w-[130px] flex items-center justify-center gap-2 ${currentRaceIndex === 0 ? '' : 'shadow-md hover:shadow-lg'}`}
-                        >
-                          <span>←</span>
-                          <span>Previous</span>
-                        </button>
-                        <button
-                          onClick={nextRace}
-                          disabled={currentRaceIndex >= totalRaces - 1}
-                          className={`${currentRaceIndex >= totalRaces - 1 ? 'bg-red-600 opacity-50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 cursor-pointer'} text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 min-w-[130px] flex items-center justify-center gap-2 ${currentRaceIndex >= totalRaces - 1 ? '' : 'shadow-md hover:shadow-lg'}`}
-                        >
-                          <span>Next</span>
-                          <span>→</span>
-                        </button>
                       </div>
                     </div>
 
@@ -374,8 +360,36 @@ const ExternalAPIs: React.FC = () => {
                 )}
 
                 {/* Race Navigation Info */}
-                <div className="text-center text-sm text-gray-500">
-                  Race {currentRaceIndex + 1} of {totalRaces} available
+                <div className="flex justify-center items-center gap-6 mt-6">
+                  <button
+                    onClick={prevRace}
+                    disabled={currentRaceIndex === 0}
+                    style={{ color: currentRaceIndex === 0 ? '#6b7280' : '#991b1b' }}
+                    className={`font-bold py-4 px-8 rounded-xl transition-all duration-200 min-w-[150px] flex items-center justify-center gap-3 border-2 text-base shadow-xl ${
+                      currentRaceIndex === 0
+                        ? 'bg-gray-200 border-gray-300 cursor-not-allowed opacity-60'
+                        : 'bg-red-100 border-red-300 hover:bg-red-200 hover:shadow-2xl transform hover:scale-105'
+                    }`}
+                  >
+                    <span className="text-xl font-bold">←</span>
+                    <span>Previous</span>
+                  </button>
+                  <div className="text-sm text-gray-700 font-semibold px-4">
+                    Race {currentRaceIndex + 1} of {totalRaces}
+                  </div>
+                  <button
+                    onClick={nextRace}
+                    disabled={currentRaceIndex >= totalRaces - 1}
+                    style={{ color: currentRaceIndex >= totalRaces - 1 ? '#6b7280' : '#991b1b' }}
+                    className={`font-bold py-4 px-8 rounded-xl transition-all duration-200 min-w-[150px] flex items-center justify-center gap-3 border-2 text-base shadow-xl ${
+                      currentRaceIndex >= totalRaces - 1
+                        ? 'bg-gray-200 border-gray-300 cursor-not-allowed opacity-60'
+                        : 'bg-red-100 border-red-300 hover:bg-red-200 hover:shadow-2xl transform hover:scale-105'
+                    }`}
+                  >
+                    <span>Next</span>
+                    <span className="text-xl font-bold">→</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -388,7 +402,7 @@ const ExternalAPIs: React.FC = () => {
             {newsLoading && newsArticles.length === 0 ? (
               <div className="text-center py-12">
                 <div className="loading mx-auto mb-4"></div>
-                <p className="text-gray-500">Loading news...</p>
+                <p className="text-gray-700">Loading news...</p>
               </div>
             ) : newsError ? (
               <div className="card">
@@ -401,7 +415,7 @@ const ExternalAPIs: React.FC = () => {
               </div>
             ) : newsArticles.length === 0 ? (
               <div className="card">
-                <p className="text-gray-500">No news articles available</p>
+                <p className="text-gray-700">No news articles available</p>
               </div>
             ) : (
               <div>
@@ -479,40 +493,51 @@ const ExternalAPIs: React.FC = () => {
                       )}
 
                       {/* Action Buttons */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                        <div className="text-sm text-gray-500">
-                          Article <span className="font-semibold text-gray-700">{currentNewsIndex + 1}</span> of <span className="font-semibold text-gray-700">{newsArticles.length}</span>
+                      <div className="flex items-center justify-center gap-6 pt-6 border-t border-gray-200 mt-6">
+                        <button
+                          onClick={prevNews}
+                          disabled={currentNewsIndex === 0}
+                          style={{ color: currentNewsIndex === 0 ? '#6b7280' : '#991b1b' }}
+                          className={`font-bold py-4 px-8 rounded-xl transition-all duration-200 min-w-[150px] flex items-center justify-center gap-3 border-2 text-base shadow-xl ${
+                            currentNewsIndex === 0
+                              ? 'bg-gray-200 border-gray-300 cursor-not-allowed opacity-60'
+                              : 'bg-red-100 border-red-300 hover:bg-red-200 hover:shadow-2xl transform hover:scale-105'
+                          }`}
+                        >
+                          <span className="text-xl font-bold">←</span>
+                          <span>Previous</span>
+                        </button>
+                        <div className="text-sm text-gray-700 font-semibold px-4">
+                          Article {currentNewsIndex + 1} of {newsArticles.length}
                         </div>
-                        <div className="flex gap-3">
-                          <button
-                            onClick={prevNews}
-                            disabled={currentNewsIndex === 0}
-                            className={`${currentNewsIndex === 0 ? 'bg-red-600 opacity-50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 cursor-pointer'} text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 min-w-[130px] flex items-center justify-center gap-2 ${currentNewsIndex === 0 ? '' : 'shadow-md hover:shadow-lg'}`}
-                          >
-                            <span>←</span>
-                            <span>Previous</span>
-                          </button>
-                          <button
-                            onClick={nextNews}
-                            disabled={currentNewsIndex >= newsArticles.length - 1}
-                            className={`${currentNewsIndex >= newsArticles.length - 1 ? 'bg-red-600 opacity-50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 cursor-pointer'} text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 min-w-[130px] flex items-center justify-center gap-2 ${currentNewsIndex >= newsArticles.length - 1 ? '' : 'shadow-md hover:shadow-lg'}`}
-                          >
-                            <span>Next</span>
-                            <span>→</span>
-                          </button>
-                          {newsArticles[currentNewsIndex].link && (
-                            <a
-                              href={newsArticles[currentNewsIndex].link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="bg-gray-800 hover:bg-gray-900 text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 inline-flex items-center gap-2 shadow-md hover:shadow-lg"
-                            >
-                              <span>Read Full Article</span>
-                              <span>→</span>
-                            </a>
-                          )}
-                        </div>
+                        <button
+                          onClick={nextNews}
+                          disabled={currentNewsIndex >= newsArticles.length - 1}
+                          style={{ color: currentNewsIndex >= newsArticles.length - 1 ? '#6b7280' : '#991b1b' }}
+                          className={`font-bold py-4 px-8 rounded-xl transition-all duration-200 min-w-[150px] flex items-center justify-center gap-3 border-2 text-base shadow-xl ${
+                            currentNewsIndex >= newsArticles.length - 1
+                              ? 'bg-gray-200 border-gray-300 cursor-not-allowed opacity-60'
+                              : 'bg-red-100 border-red-300 hover:bg-red-200 hover:shadow-2xl transform hover:scale-105'
+                          }`}
+                        >
+                          <span>Next</span>
+                          <span className="text-xl font-bold">→</span>
+                        </button>
                       </div>
+                      {newsArticles[currentNewsIndex].link && (
+                        <div className="flex justify-center mt-4" style={{ position: 'relative', zIndex: 10 }}>
+                          <a
+                            href={newsArticles[currentNewsIndex].link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black text-white font-bold py-4 px-8 rounded-xl transition-all duration-200 inline-flex items-center gap-3 shadow-xl hover:shadow-2xl transform hover:scale-105 border-2 border-gray-700 text-base"
+                            style={{ display: 'inline-flex', visibility: 'visible', opacity: 1 }}
+                          >
+                            <span>Read Full Article</span>
+                            <span className="text-xl font-bold">→</span>
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -520,6 +545,7 @@ const ExternalAPIs: React.FC = () => {
             )}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

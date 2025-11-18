@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 import { api } from '../services/api';
 
 interface DataContextType {
@@ -9,6 +9,7 @@ interface DataContextType {
   fetchViewData: (viewName: string, limit?: number, offset?: number) => Promise<any[]>;
   searchInView: (viewName: string, searchTerm: string, column?: string) => Promise<any[]>;
   exportData: (table: string, format: 'json' | 'csv') => Promise<string>;
+  isDataLoaded: boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -29,8 +30,17 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [viewsData, setViewsData] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const isFetchingRef = useRef(false);
 
-  const fetchViewsData = async () => {
+  const fetchViewsData = useCallback(async () => {
+    // Prevent duplicate fetches and skip if already loaded
+    if (isFetchingRef.current || isDataLoaded) {
+      console.log('⏭️  Skipping fetch - data already loaded or fetch in progress');
+      return;
+    }
+
+    isFetchingRef.current = true;
     setLoading(true);
     setError(null);
     console.log('🔄 Starting to fetch views data...');
@@ -47,6 +57,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
         const data = response.data.data || {};
         console.log('📊 Received views data:', Object.keys(data));
         setViewsData(data);
+        setIsDataLoaded(true);
         
         // Check if any views have data
         const viewsWithData = Object.values(data).filter((arr: any) => Array.isArray(arr) && arr.length > 0);
@@ -91,8 +102,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     } finally {
       console.log('✅ fetchViewsData finished, setting loading to false');
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  };
+  }, [isDataLoaded]);
 
   const fetchViewData = async (viewName: string, limit = 100, offset = 0): Promise<any[]> => {
     try {
@@ -151,7 +163,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     fetchViewsData,
     fetchViewData,
     searchInView,
-    exportData
+    exportData,
+    isDataLoaded
   };
 
   return (

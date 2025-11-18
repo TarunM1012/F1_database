@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 
 const Views: React.FC = () => {
-  const { viewsData, fetchViewsData, error, fetchViewData, searchInView } = useData();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { viewsData, fetchViewsData, error, fetchViewData, searchInView, isDataLoaded } = useData();
   const [selectedView, setSelectedView] = useState<string>('');
   const [viewData, setViewData] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -10,6 +12,7 @@ const Views: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [lastSearchCount, setLastSearchCount] = useState<number | null>(null);
   const [countsByView, setCountsByView] = useState<Record<string, number>>({});
+  const [searchError, setSearchError] = useState<string>('');
 
   const viewNames = [
     { id: 'driver_performance_details', name: 'Driver Performance Details', description: 'Join of 3+ tables' },
@@ -26,41 +29,68 @@ const Views: React.FC = () => {
 
   useEffect(() => {
     const initializeViews = async () => {
-      await fetchViewsData();
-      // Auto-select first view after data loads
-      if (viewNames.length > 0 && !selectedView) {
+      if (!isDataLoaded) {
+        await fetchViewsData();
+      }
+      
+      // Check if a specific view was requested via URL
+      const viewParam = searchParams.get('view');
+      
+      if (viewParam && viewNames.some(v => v.id === viewParam)) {
+        // Load the requested view from URL
+        handleViewSelect(viewParam);
+      } else if (viewNames.length > 0 && !selectedView && Object.keys(viewsData).length > 0) {
+        // Auto-select first view if no specific view requested
         handleViewSelect(viewNames[0].id);
       }
     };
     initializeViews();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isDataLoaded, searchParams]);
 
   const handleViewSelect = async (viewName: string) => {
     setSelectedView(viewName);
     setSearchTerm('');
+    setSearchError('');
+    setLastSearchCount(null);
     setIsSearching(true);
+    
+    // Update URL with selected view
+    setSearchParams({ view: viewName });
+    
     try {
       const data = await fetchViewData(viewName, 100);
       setViewData(data);
       setCountsByView(prev => ({ ...prev, [viewName]: Array.isArray(data) ? data.length : 0 }));
     } catch (error) {
       console.error('Error fetching view data:', error);
+      setSearchError('Failed to load view data');
     } finally {
       setIsSearching(false);
     }
   };
 
   const handleSearch = async () => {
-    if (!selectedView || !searchTerm.trim()) return;
+    if (!selectedView || !searchTerm.trim()) {
+      setSearchError('Please enter a search term');
+      return;
+    }
     
     setIsSearching(true);
+    setSearchError('');
+    setLastSearchCount(null);
+    
     try {
-      const data = await searchInView(selectedView, searchTerm);
+      const data = await searchInView(selectedView, searchTerm.trim());
       setViewData(data);
       setLastSearchCount(Array.isArray(data) ? data.length : 0);
-    } catch (error) {
+      
+      if (data.length === 0) {
+        setSearchError('No results found. Try different search terms.');
+      }
+    } catch (error: any) {
       console.error('Error searching:', error);
+      setSearchError(error.message || 'Search failed. The search term may not match any columns in this view.');
     } finally {
       setIsSearching(false);
     }
@@ -68,6 +98,8 @@ const Views: React.FC = () => {
 
   const handleClearSearch = () => {
     setSearchTerm('');
+    setSearchError('');
+    setLastSearchCount(null);
     if (selectedView) {
       handleViewSelect(selectedView);
     }
@@ -145,7 +177,7 @@ const Views: React.FC = () => {
   };
 
   return (
-    <div className="views-layout">
+    <div className="views-layout" style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       {/* Sidebar */}
       <div className={`views-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-header">
@@ -215,9 +247,21 @@ const Views: React.FC = () => {
                   placeholder="Search in this view..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSearch();
+                    }
+                  }}
                   className="search-input"
                 />
+                <button
+                  onClick={handleSearch}
+                  disabled={!searchTerm.trim() || isSearching}
+                  className="btn-primary disabled:opacity-50"
+                >
+                  {isSearching ? 'Searching...' : 'Search'}
+                </button>
                 {searchTerm && (
                   <button
                     onClick={handleClearSearch}
@@ -226,27 +270,32 @@ const Views: React.FC = () => {
                     Clear
                   </button>
                 )}
-                <button
-                  onClick={handleSearch}
-                  disabled={!searchTerm.trim() || isSearching}
-                  className="btn-primary disabled:opacity-50"
-                >
-                  {isSearching ? 'Searching...' : 'Search'}
-                </button>
               </div>
-              {lastSearchCount !== null && (
-                <div className="text-sm text-gray-600 ml-4">
-                  {lastSearchCount} result{lastSearchCount === 1 ? '' : 's'}
-                </div>
-              )}
             </div>
+
+            {/* Search Results Info */}
+            {searchError && (
+              <div className="px-6 py-2">
+                <div className="alert alert-warning">
+                  {searchError}
+                </div>
+              </div>
+            )}
+            
+            {lastSearchCount !== null && !searchError && (
+              <div className="px-6 py-2">
+                <p className="text-sm text-gray-600">
+                  Found {lastSearchCount} result{lastSearchCount === 1 ? '' : 's'} for "{searchTerm}"
+                </p>
+              </div>
+            )}
 
             {/* Data Table */}
             <div className="content-body">
               {isSearching ? (
                 <div className="flex justify-center items-center py-12">
                   <div className="loading"></div>
-                  <span className="ml-3 text-gray-600">Loading data...</span>
+                  <span className="ml-4 text-gray-600">Loading data...</span>
                 </div>
               ) : (
                 renderTable(viewData)
@@ -256,8 +305,8 @@ const Views: React.FC = () => {
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Database Views</h2>
-              <p className="text-gray-600">Select a view from the sidebar to get started</p>
+              <h2 className="text-2xl font-bold mb-2" style={{ color: '#ffffff' }}>Welcome to Database Views</h2>
+              <p style={{ color: '#ffffff' }}>Select a view from the sidebar to get started</p>
             </div>
           </div>
         )}

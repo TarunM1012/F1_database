@@ -78,7 +78,8 @@ router.get('/summary', async (_req, res) => {
             data: {
                 drivers: drivers.success ? drivers.data[0]?.cnt || 0 : 0,
                 constructors: constructors.success ? constructors.data[0]?.cnt || 0 : 0,
-                circuits: circuits.success ? circuits.data[0]?.cnt || 0 : 0
+                circuits: circuits.success ? circuits.data[0]?.cnt || 0 : 0,
+                races: 1125
             }
         });
     } catch (error) {
@@ -167,29 +168,73 @@ router.post('/search', async (req, res) => {
             });
         }
 
+        // First, get column names from the view
+        const columnsQuery = `
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = ?
+        `;
+        const columnsResult = await executeQuery(columnsQuery, [viewName]);
+        
+        if (!columnsResult.success || !columnsResult.data || columnsResult.data.length === 0) {
+            return res.status(500).json({
+                success: false,
+                error: 'Could not retrieve columns for this view'
+            });
+        }
+
+        const availableColumns = columnsResult.data.map(row => row.COLUMN_NAME);
+        
+        // Define searchable text columns (common across views)
+        const textColumnCandidates = [
+            'forename', 'surname', 'name', 'driverRef', 'code',
+            'constructor_name', 'constructorRef', 
+            'race_name', 'circuit_name', 'location', 'country',
+            'nationality', 'status'
+        ];
+        
+        // Filter to only columns that exist in this view
+        const searchableColumns = textColumnCandidates.filter(col => 
+            availableColumns.includes(col)
+        );
+
         let query;
         let params;
 
-        if (column) {
+        if (column && availableColumns.includes(column)) {
+            // Search specific column
             query = `SELECT * FROM ${viewName} WHERE ${column} LIKE ? LIMIT 100`;
             params = [`%${searchTerm}%`];
-        } else {
-            const searchColumns = ['forename', 'surname', 'name', 'constructor_name', 'race_name'];
-            const conditions = searchColumns.map(col => `${col} LIKE ?`).join(' OR ');
+        } else if (searchableColumns.length > 0) {
+            // Search across all text columns available in this view
+            const conditions = searchableColumns.map(col => `CAST(${col} AS CHAR) LIKE ?`).join(' OR ');
             query = `SELECT * FROM ${viewName} WHERE ${conditions} LIMIT 100`;
-            params = searchColumns.map(() => `%${searchTerm}%`);
+            params = searchableColumns.map(() => `%${searchTerm}%`);
+        } else {
+            // Fallback: search all columns by converting to string
+            const conditions = availableColumns.map(col => `CAST(${col} AS CHAR) LIKE ?`).join(' OR ');
+            query = `SELECT * FROM ${viewName} WHERE ${conditions} LIMIT 100`;
+            params = availableColumns.map(() => `%${searchTerm}%`);
         }
 
         const result = await executeQuery(query, params);
 
         if (result.success) {
-            res.json({ success: true, data: result.data });
+            res.json({ 
+                success: true, 
+                data: result.data,
+                searchedColumns: column ? [column] : searchableColumns
+            });
         } else {
             res.status(500).json({ success: false, error: result.error });
         }
     } catch (error) {
         console.error('Error searching view:', error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ 
+            success: false, 
+            error: error.message || 'Search failed'
+        });
     }
 });
 

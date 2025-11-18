@@ -105,14 +105,22 @@ const DataExport: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-blue-900 mb-2">💡 Export Tips</h3>
-        <ul className="space-y-1 text-sm text-blue-800">
-          <li>• CSV files are compatible with Excel, Google Sheets, and other spreadsheet applications</li>
-          <li>• Large tables may take a moment to export</li>
-          <li>• Files are automatically downloaded to your default downloads folder</li>
-          <li>• Special characters in data are properly escaped for CSV format</li>
-        </ul>
+      <div className="card">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Export Tips</h2>
+        <div className="text-base text-gray-600 space-y-2">
+          <p>
+            <strong>File Format:</strong> CSV files are compatible with Excel, Google Sheets, and other 
+            spreadsheet applications for easy analysis and manipulation.
+          </p>
+          <p>
+            <strong>Download Location:</strong> Files are automatically downloaded to your default 
+            downloads folder. Large tables may take a moment to export.
+          </p>
+          <p>
+            <strong>Data Quality:</strong> Special characters in data are properly escaped for CSV format, 
+            ensuring data integrity across different platforms.
+          </p>
+        </div>
       </div>
     </div>
   );

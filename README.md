@@ -28,11 +28,6 @@ Before you begin, ensure you have the following installed on your computer:
      - CentOS/RHEL: `sudo yum install mysql-server`
    - Verify installation: `mysql --version`
 
-3. **Git** (optional, for cloning the repository)
-   - Download from [git-scm.com](https://git-scm.com/)
-
-4. **A code editor** (VS Code, WebStorm, etc.)
-
 ## Installation Steps
 
 ### 1. Clone or Download the Project
@@ -97,16 +92,8 @@ sudo service mysql start
 
 2. Import the database using one of these methods:
 
-**Method 1: Using MySQL Command Line**
-```bash
-# Create the database first
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS formula1_db;"
 
-# Import the dump file
-mysql -u root -p formula1_db < data/Dump20251104.sql
-```
-
-**Method 2: Using MySQL Workbench**
+**Method: Using MySQL Workbench**
 - Open MySQL Workbench
 - Connect to your MySQL server
 - Go to Server → Data Import
@@ -115,12 +102,6 @@ mysql -u root -p formula1_db < data/Dump20251104.sql
 - Select "New" under "Default Target Schema" and name it `formula1_db`
 - Click "Start Import"
 
-**Method 3: Using phpMyAdmin**
-- Open phpMyAdmin in your browser
-- Create a new database named `formula1_db`
-- Select the database
-- Go to the "Import" tab
-- Choose the SQL dump file and click "Go"
 
 #### Step 4.3: Verify Database Import
 
@@ -160,14 +141,11 @@ JWT_SECRET=your_jwt_secret_key_here_change_this
 PORT=5000
 NODE_ENV=development
 
-# External API Keys (optional - system works without them)
+# External API Keys 
 NEWSDATA_API_KEY=pub_82ea2edfc06544baba45b76bbfa50740
 ```
 
-**Important Notes:**
-- **Port**: Most MySQL installations use port `3306` by default. If your MySQL uses a different port (like `3307`), update `DB_PORT` accordingly.
-- **Database Name**: Make sure `DB_NAME` matches the database name you created when importing the SQL dump.
-- **Password**: If you set a password for MySQL root user, update `DB_PASSWORD`. If no password, leave it empty: `DB_PASSWORD=`
+`
 
 #### Step 5.2: Frontend Configuration (if needed)
 
@@ -220,16 +198,11 @@ cd frontend
 npm start
 ```
 
-The application will automatically open in your browser at `http://localhost:3000`
-
-If it doesn't open automatically, manually navigate to: `http://localhost:3000`
-
 ## Default Login Credentials
 
 - **Username**: `admin`
 - **Password**: `admin123`
 
-**Important**: Change these credentials after first login for security!
 
 ## Project Structure
 
@@ -257,101 +230,8 @@ F1_database/
 └── README.md               # This file
 ```
 
-## Troubleshooting
 
-### Database Connection Issues
 
-**Error: "Failed to connect to database"**
-
-1. **Check MySQL is running:**
-   - Windows: Check Services
-   - macOS/Linux: `sudo systemctl status mysql`
-
-2. **Verify port number:**
-   - Check your MySQL port: `mysql -u root -p -e "SHOW VARIABLES LIKE 'port';"`
-   - Update `DB_PORT` in `backend/config.env` to match
-
-3. **Verify database name:**
-   - List databases: `mysql -u root -p -e "SHOW DATABASES;"`
-   - Update `DB_NAME` in `backend/config.env` to match
-
-4. **Check credentials:**
-   - Test connection: `mysql -u root -p`
-   - Update `DB_USER` and `DB_PASSWORD` in `backend/config.env`
-
-5. **Verify database was imported:**
-   - Check tables exist: `mysql -u root -p -e "USE formula1_db; SHOW TABLES;"`
-
-See `DATABASE_SETUP.md` for detailed troubleshooting guide.
-
-### Port Already in Use
-
-**Error: "Port 5000 already in use" (Backend)**
-
-Change the port in `backend/config.env`:
-```env
-PORT=5001  # or any other available port
-```
-
-Then update `frontend/src/services/api.ts`:
-```typescript
-const API_URL = 'http://localhost:5001';
-```
-
-**Error: "Port 3000 already in use" (Frontend)**
-
-The React app will ask if you want to use a different port. Type `Y` and press Enter.
-
-### Module Not Found Errors
-
-If you see "Cannot find module" errors:
-
-1. Delete `node_modules` folder
-2. Delete `package-lock.json` file
-3. Run `npm install` again
-
-```bash
-# In backend folder
-rm -rf node_modules package-lock.json
-npm install
-
-# In frontend folder
-rm -rf node_modules package-lock.json
-npm install
-```
-
-### Weather/News API Errors
-
-The application will still work if external APIs fail. Weather and news features may show errors, but core database functionality will work.
-
-## Available Scripts
-
-### Backend
-
-- `npm start` - Start the backend server
-- `npm run dev` - Start with auto-reload (requires nodemon)
-
-### Frontend
-
-- `npm start` - Start the React development server
-- `npm run build` - Build for production
-- `npm test` - Run tests
-
-## API Endpoints
-
-The backend provides RESTful API endpoints:
-
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login and get JWT token
-- `GET /api/crud/:table` - Get all records from a table
-- `POST /api/crud/:table` - Create a new record
-- `PUT /api/crud/:table/:id` - Update a record
-- `DELETE /api/crud/:table/:id` - Delete a record
-- `GET /api/views/all` - Get data from all views
-- `GET /api/openmeteo/weather/race/:index` - Get weather for a race
-- `GET /api/newsdata/news/latest` - Get latest F1 news
-
-All endpoints (except login/register) require authentication via JWT token.
 
 ## Technologies Used
 
@@ -361,27 +241,9 @@ All endpoints (except login/register) require authentication via JWT token.
 - **Authentication**: JWT (JSON Web Tokens)
 - **External APIs**: Open-Meteo (weather), NewsData.io (news)
 
-## Support
 
-If you encounter issues:
-
-1. Check the troubleshooting section above
-2. Verify all prerequisites are installed
-3. Check that MySQL is running
-4. Verify database credentials in `backend/config.env`
-5. Check terminal/console for error messages
-6. See `DATABASE_SETUP.md` for database-specific issues
 
 ## License
 
 MIT License - feel free to use this project for learning and development.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
----
-
-**Happy Coding! 🏎️💨**
-
 
